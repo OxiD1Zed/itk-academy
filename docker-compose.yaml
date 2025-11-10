@@ -1,0 +1,57 @@
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres_container
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DATABASE}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - ./migration:/docker-entrypoint-initdb.d
+    hostname: ${POSTGRES_HOST}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    networks:
+      - app_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: itk_app
+    command: ./itk-app
+    ports:
+      - "${APP_PORT}:4141"
+    environment:
+      - APP_PORT=${APP_PORT}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DATABASE=${POSTGRES_DATABASE}
+      - POSTGRES_MAX_CONNECTIONS=${POSTGRES_MAX_CONNECTIONS}
+      - POSTGRES_ACQUIRE_TIMEOUT=${POSTGRES_ACQUIRE_TIMEOUT}
+      - APP_HOST=${APP_HOST}
+    networks:
+      - app_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+networks:
+  app_network:
+    driver: bridge

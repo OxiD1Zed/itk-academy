@@ -1,0 +1,6 @@
+test/
+migration/
+
+.gitignore
+.pdf
+.jmx
