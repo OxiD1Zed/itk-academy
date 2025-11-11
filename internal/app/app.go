@@ -53,6 +53,7 @@ func (app *App) Run() error {
 
 	log.Info("starting the server")
 	defer log.Info("stopping the server")
+	defer pool.Close()
 
 	add := fmt.Sprintf("%s:%v", app.config.AppConfig.Host, app.config.AppConfig.Port)
 	log.Info("server address: %s", add)
